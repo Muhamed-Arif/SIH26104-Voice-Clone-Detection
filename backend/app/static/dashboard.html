@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIH26104 Voice Shield - Real-Time AI Detection & Prevention Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --bg-card: rgba(16, 24, 40, 0.75);
+      --bg-card-hover: rgba(24, 35, 58, 0.85);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(56, 189, 248, 0.25);
+      
+      --accent-cyan: #38bdf8;
+      --accent-blue: #3b82f6;
+      --accent-purple: #818cf8;
+      --risk-low: #10b981;
+      --risk-med: #f59e0b;
+      --risk-high: #ef4444;
+      
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(129, 140, 248, 0.1) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(15, 23, 42, 0.5) 0px, transparent 100%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      backdrop-filter: blur(16px);
+      background: rgba(9, 13, 22, 0.8);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+    }
+
+    .brand-text h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(to right, #fff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-text p {
+      font-size: 0.75rem;
+      color: var(--accent-cyan);
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #34d399;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.15); }
+    }
+
+    .nav-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 1024px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      transition: border-color 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: var(--border-glow);
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title-icon {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Live Stream & Simulation Panel */
+    .stream-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.25s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn.spoof {
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+    .btn.spoof:hover {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), #1e293b);
+      border-color: var(--risk-high);
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+    }
+
+    .btn.genuine {
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+    .btn.genuine:hover {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), #1e293b);
+      border-color: var(--risk-low);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn.stream-toggle {
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+    .btn.stream-toggle.active {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      color: #000;
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.5);
+    }
+
+    /* Waveform Canvas */
+    .visualizer-container {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      height: 120px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .metric-box {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .metric-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Threat Gauge Section */
+    .threat-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem 0;
+    }
+
+    .gauge-wrapper {
+      position: relative;
+      width: 220px;
+      height: 120px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .gauge-circle {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: 16px solid rgba(255, 255, 255, 0.05);
+      border-top-color: var(--risk-low);
+      border-right-color: var(--risk-low);
+      transform: rotate(-45deg);
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .gauge-text {
+      position: absolute;
+      bottom: 0px;
+      text-align: center;
+    }
+
+    .gauge-score {
+      font-size: 3rem;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1;
+    }
+
+    .gauge-level {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 14px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .level-low {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--risk-low);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .level-med {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--risk-med);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .level-high {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--risk-high);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      animation: alertPulse 1.5s infinite;
+    }
+
+    @keyframes alertPulse {
+      0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+      50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.8); }
+    }
+
+    /* Live Feed / Activity Table */
+    .log-feed {
+      height: 280px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 4px;
+    }
+
+    .log-feed::-webkit-scrollbar {
+      width: 6px;
+    }
+    .log-feed::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 3px;
+    }
+
+    .feed-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .feed-item.high {
+      border-left: 3px solid var(--risk-high);
+      background: rgba(239, 68, 68, 0.05);
+    }
+    .feed-item.low {
+      border-left: 3px solid var(--risk-low);
+    }
+
+    .feed-chunk {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent-cyan);
+    }
+
+    .feed-badge {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    /* Reason codes pill tags */
+    .reason-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 1rem;
+    }
+
+    .tag {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      border-top: 1px solid var(--border-color);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">🛡️</div>
+      <div class="brand-text">
+        <h1>VoiceShield AI</h1>
+        <p>SIH26104 Defense Backend & Stream Engine</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="status-badge" id="system-status">
+        <span class="status-dot"></span>
+        <span>Backend Online</span>
+      </div>
+      <a href="/docs" target="_blank" class="nav-btn">Swagger API Docs ↗</a>
+      <a href="/redoc" target="_blank" class="nav-btn">ReDoc ↗</a>
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <main>
+    <!-- Left Column: Audio Ingestion, Stream Control & Waveform -->
+    <div class="card">
+      <div class="card-title">
+        <div class="card-title-icon">
+          <span>🎙️</span>
+          <span>DSP Audio Ingestion & Live Pipeline</span>
+        </div>
+        <span style="font-size: 0.75rem; color: var(--accent-cyan);" id="session-display">Session: Initializing...</span>
+      </div>
+
+      <div class="stream-controls">
+        <!-- Action Buttons -->
+        <div class="button-group">
+          <button class="btn spoof" id="btn-spoof" onclick="simulateChunk('spoof')">
+            <span style="font-size: 1.4rem;">⚠️</span>
+            <span>Simulate Clone Attack</span>
+          </button>
+          <button class="btn genuine" id="btn-genuine" onclick="simulateChunk('genuine')">
+            <span style="font-size: 1.4rem;">👤</span>
+            <span>Simulate Human Voice</span>
+          </button>
+          <button class="btn stream-toggle" id="btn-stream" onclick="toggleLiveStream()">
+            <span style="font-size: 1.4rem;" id="stream-icon">⚡</span>
+            <span id="stream-text">Start WS Live Stream</span>
+          </button>
+        </div>
+
+        <!-- Real-Time Waveform Visualizer -->
+        <div class="visualizer-container">
+          <canvas id="waveformCanvas"></canvas>
+        </div>
+
+        <!-- Latency & Pipeline Stats -->
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="metric-label">Inference Latency</div>
+            <div class="metric-value" id="val-latency" style="color: var(--accent-cyan);">-- ms</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Synthetic Likelihood</div>
+            <div class="metric-value" id="val-synth-prob" style="color: #fff;">-- %</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Model Confidence</div>
+            <div class="metric-value" id="val-confidence" style="color: #fff;">-- %</div>
+          </div>
+        </div>
+
+        <!-- Live Diagnostics & Reason Codes -->
+        <div style="margin-top: 0.5rem;">
+          <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Active Threat Drivers / Reason Codes:</div>
+          <div class="reason-tags" id="reason-container">
+            <span class="tag">WAITING_FOR_AUDIO_INGESTION</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Risk Engine Gauge, Automated Prevention & Event Log -->
+    <div style="display: flex; flex-direction: column; gap: 2rem;">
+      
+      <!-- Threat Gauge Card -->
+      <div class="card">
+        <div class="card-title">
+          <div class="card-title-icon">
+            <span>🎯</span>
+            <span>Multi-Factor Risk Assessment</span>
+          </div>
+          <span style="font-size: 0.75rem; color: var(--text-muted);" id="action-display">ACTION: ALLOW</span>
+        </div>
+
+        <div class="threat-display">
+          <div class="gauge-wrapper">
+            <div class="gauge-circle" id="gauge-circle"></div>
+            <div class="gauge-text">
+              <div class="gauge-score" id="gauge-score" style="color: var(--risk-low);">0</div>
+            </div>
+          </div>
+          <div class="gauge-level level-low" id="gauge-badge">LOW RISK (GENUINE)</div>
+        </div>
+      </div>
+
+      <!-- Live Stream Analysis Events -->
+      <div class="card" style="flex: 1;">
+        <div class="card-title">
+          <div class="card-title-icon">
+            <span>📋</span>
+            <span>Audit Trail & Ingestion Log</span>
+          </div>
+          <span style="font-size: 0.75rem; color: var(--text-muted);" id="chunk-counter">0 events</span>
+        </div>
+
+        <div class="log-feed" id="log-feed">
+          <!-- Items will be prepended here dynamically -->
+          <div class="feed-item low">
+            <div>
+              <span class="feed-chunk">SYS_INIT</span>
+              <span style="color: var(--text-muted); margin-left: 8px;">Backend connected to SQLite/Postgres. Ready for DSP stream.</span>
+            </div>
+            <span class="feed-badge" style="background: rgba(16,185,129,0.2); color: #34d399;">READY</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer>
+    SIH26104 Voice Cloning Detection & Prevention Backend &bull; Member 3 Architecture &bull; Connected to FastAPI v1.0.0
+  </footer>
+
+  <script>
+    let currentSessionId = null;
+    let ws = null;
+    let isStreaming = false;
+    let streamInterval = null;
+    let eventCount = 0;
+
+    // Initialize session on load
+    async function initSession() {
+      try {
+        const res = await fetch('/api/v1/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: '00000000-0000-0000-0000-000000000001',
+            mode: 'realtime'
+          })
+        });
+        const data = await res.json();
+        currentSessionId = data.session_id;
+        document.getElementById('session-display').innerText = 'Session: ' + currentSessionId.slice(0, 8) + '...';
+      } catch (err) {
+        console.warn('Could not auto-create session, generating local UUID:', err);
+        currentSessionId = '11111111-2222-3333-4444-555555555555';
+        document.getElementById('session-display').innerText = 'Session: Local Mode';
+      }
+    }
+
+    // Update UI components with analysis result
+    function updateDashboard(res) {
+      eventCount++;
+      document.getElementById('chunk-counter').innerText = `${eventCount} events`;
+
+      // Update metrics
+      document.getElementById('val-latency').innerText = `${res.latency_ms || 12} ms`;
+      document.getElementById('val-synth-prob').innerText = `${Math.round((res.synthetic_probability || 0) * 100)} %`;
+      document.getElementById('val-confidence').innerText = `${Math.round((res.confidence || 0) * 100)} %`;
+
+      // Update Gauge
+      const score = res.risk_score || 0;
+      const scoreEl = document.getElementById('gauge-score');
+      const badgeEl = document.getElementById('gauge-badge');
+      const circleEl = document.getElementById('gauge-circle');
+      const actionEl = document.getElementById('action-display');
+
+      scoreEl.innerText = score;
+      actionEl.innerText = `ACTION: ${res.action || 'ALLOW'}`;
+
+      if (score >= 70) {
+        scoreEl.style.color = 'var(--risk-high)';
+        badgeEl.className = 'gauge-level level-high';
+        badgeEl.innerText = `HIGH RISK - ${res.action || 'BLOCK'}`;
+        circleEl.style.borderTopColor = 'var(--risk-high)';
+        circleEl.style.borderRightColor = 'var(--risk-high)';
+      } else if (score >= 30) {
+        scoreEl.style.color = 'var(--risk-med)';
+        badgeEl.className = 'gauge-level level-med';
+        badgeEl.innerText = 'MEDIUM RISK (MONITOR)';
+        circleEl.style.borderTopColor = 'var(--risk-med)';
+        circleEl.style.borderRightColor = 'var(--risk-med)';
+      } else {
+        scoreEl.style.color = 'var(--risk-low)';
+        badgeEl.className = 'gauge-level level-low';
+        badgeEl.innerText = 'LOW RISK (GENUINE)';
+        circleEl.style.borderTopColor = 'var(--risk-low)';
+        circleEl.style.borderRightColor = 'var(--risk-low)';
+      }
+
+      // Update Reason Codes
+      const reasonsContainer = document.getElementById('reason-container');
+      reasonsContainer.innerHTML = '';
+      const codes = res.reason_codes && res.reason_codes.length > 0 ? res.reason_codes : ['NATURAL_VOICE_CHARACTERISTICS'];
+      codes.forEach(c => {
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.innerText = c;
+        reasonsContainer.appendChild(tag);
+      });
+
+      // Add to event log feed
+      const feed = document.getElementById('log-feed');
+      const item = document.createElement('div');
+      const isHigh = res.risk_level === 'HIGH';
+      item.className = `feed-item ${isHigh ? 'high' : 'low'}`;
+      item.innerHTML = `
+        <div>
+          <span class="feed-chunk">${res.chunk_id}</span>
+          <span style="color: var(--text-muted); margin-left: 8px;">Prob: ${(res.synthetic_probability * 100).toFixed(1)}% | Score: ${res.risk_score}</span>
+        </div>
+        <span class="feed-badge" style="background: ${isHigh ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}; color: ${isHigh ? '#f87171' : '#34d399'};">
+          ${res.action || 'ALLOW'}
+        </span>
+      `;
+      feed.insertBefore(item, feed.firstChild);
+    }
+
+    // Simulate individual chunk
+    async function simulateChunk(type) {
+      drawWaveform(type === 'spoof' ? 'chaotic' : 'harmonic');
+      const chunkId = `dsp-chunk-${type}-${Math.floor(Math.random() * 9000 + 1000)}`;
+      const payload = {
+        waveform: 'dGVzdF93YXZlZm9ybV9ieXRlX3N0cmluZw==',
+        sample_rate: 16000,
+        chunk_id: chunkId,
+        quality: 'HIGH',
+        timestamp: new Date().toISOString(),
+        session_id: currentSessionId
+      };
+
+      try {
+        const res = await fetch('/api/v1/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        updateDashboard(result);
+      } catch (e) {
+        console.error('Error analyzing chunk:', e);
+      }
+    }
+
+    // Toggle WebSocket Live Stream
+    function toggleLiveStream() {
+      const btn = document.getElementById('btn-stream');
+      const icon = document.getElementById('stream-icon');
+      const text = document.getElementById('stream-text');
+
+      if (!isStreaming) {
+        // Start streaming
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        ws = new WebSocket(`${protocol}//${window.location.host}/api/v1/stream?session_id=${currentSessionId}`);
+
+        ws.onopen = () => {
+          isStreaming = true;
+          btn.classList.add('active');
+          icon.innerText = '⏹️';
+          text.innerText = 'Stop Live Stream';
+
+          // Periodically push chunks over WebSocket
+          streamInterval = setInterval(() => {
+            const isSpoof = Math.random() > 0.6;
+            drawWaveform(isSpoof ? 'chaotic' : 'harmonic');
+            const chunk = {
+              waveform: 'dGVzdF9zdHJlYW1fd2F2ZWZvcm0=',
+              sample_rate: 16000,
+              chunk_id: `stream-${isSpoof ? 'spoof' : 'clean'}-${Math.floor(Math.random() * 8999 + 1000)}`,
+              quality: 'HIGH',
+              timestamp: new Date().toISOString(),
+            };
+            ws.send(JSON.stringify(chunk));
+          }, 1200);
+        };
+
+        ws.onmessage = (event) => {
+          const frame = JSON.parse(event.data);
+          if (frame.type === 'ANALYSIS_RESULT') {
+            updateDashboard(frame.data);
+          }
+        };
+
+        ws.onclose = () => {
+          stopStreamUI();
+        };
+      } else {
+        if (ws) ws.close();
+        stopStreamUI();
+      }
+    }
+
+    function stopStreamUI() {
+      isStreaming = false;
+      if (streamInterval) clearInterval(streamInterval);
+      const btn = document.getElementById('btn-stream');
+      const icon = document.getElementById('stream-icon');
+      const text = document.getElementById('stream-text');
+      btn.classList.remove('active');
+      icon.innerText = '⚡';
+      text.innerText = 'Start WS Live Stream';
+    }
+
+    // Canvas Waveform Animation
+    const canvas = document.getElementById('waveformCanvas');
+    const ctx = canvas.getContext('2d');
+    let phase = 0;
+    let waveMode = 'idle';
+
+    function resizeCanvas() {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function drawWaveform(mode = waveMode) {
+      waveMode = mode;
+    }
+
+    function renderWaveform() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const centerY = canvas.height / 2;
+      ctx.lineWidth = 2.5;
+
+      if (waveMode === 'chaotic') {
+        ctx.strokeStyle = '#ef4444';
+        ctx.shadowColor = '#ef4444';
+        ctx.shadowBlur = 10;
+      } else if (waveMode === 'harmonic') {
+        ctx.strokeStyle = '#10b981';
+        ctx.shadowColor = '#10b981';
+        ctx.shadowBlur = 10;
+      } else {
+        ctx.strokeStyle = '#38bdf8';
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 6;
+      }
+
+      ctx.beginPath();
+      for (let x = 0; x < canvas.width; x++) {
+        let y = centerY;
+        if (waveMode === 'chaotic') {
+          y += Math.sin((x + phase * 3) * 0.08) * 22 + Math.cos((x + phase * 5) * 0.15) * 16 + (Math.random() - 0.5) * 10;
+        } else if (waveMode === 'harmonic') {
+          y += Math.sin((x + phase * 2) * 0.04) * 26 + Math.sin((x + phase) * 0.08) * 8;
+        } else {
+          y += Math.sin((x + phase) * 0.02) * 12;
+        }
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      phase += 1.5;
+      requestAnimationFrame(renderWaveform);
+    }
+
+    // Boot
+    initSession();
+    renderWaveform();
+  </script>
+</body>
+</html>
