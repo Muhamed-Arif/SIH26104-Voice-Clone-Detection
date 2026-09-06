@@ -1,6 +1,8 @@
 import uuid
+import asyncio
 from typing import Any, Dict, Optional
 from app.core.logging import get_logger
+from app.tasks.analysis_tasks import dispatch_high_risk_webhook
 
 logger = get_logger(__name__)
 
@@ -30,6 +32,18 @@ class PreventionAdapter:
         logger.warning(
             f"PREVENTION TRIGGERED for session={session_id}, analysis={analysis_id}, score={risk_score}"
         )
+        
+        payload = {
+            "session_id": str(session_id),
+            "analysis_id": str(analysis_id),
+            "risk_score": risk_score,
+            "reason_codes": reason_codes,
+            "details": details
+        }
+        
+        # Dispatch webhook in the background (using asyncio.create_task for fire-and-forget in this context)
+        asyncio.create_task(dispatch_high_risk_webhook(payload))
+
         return {
             "status": "DISPATCHED",
             "session_id": str(session_id),
@@ -38,6 +52,7 @@ class PreventionAdapter:
             "actions_executed": [
                 "FLAG_SESSION_SUSPICIOUS",
                 "SECURITY_ALERT_LOGGED",
+                "WEBHOOK_DISPATCHED",
                 # TODO(M5): Add automated call interruption hook here
             ],
         }

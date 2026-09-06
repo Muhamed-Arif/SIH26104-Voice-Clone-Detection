@@ -63,7 +63,8 @@ async def handle_stream_connection(
                     "type": "ANALYSIS_RESULT",
                     "data": result.model_dump(mode="json"),
                 }
-                await ws_manager.send_personal_json(result_payload, websocket)
+                await db.commit()
+                await ws_manager.broadcast_to_session(result_payload, str_session_id)
 
             except Exception as exc:
                 logger.error(f"Error processing stream chunk for session {str_session_id}: {exc}")

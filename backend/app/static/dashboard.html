@@ -535,6 +535,21 @@
           </div>
         </div>
 
+        <div class="metrics-grid" style="margin-top: 1rem;">
+          <div class="metric-box">
+            <div class="metric-label">Total Analyses</div>
+            <div class="metric-value" id="analytics-analyses">--</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Total Sessions</div>
+            <div class="metric-value" id="analytics-sessions">--</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Average Risk</div>
+            <div class="metric-value" id="analytics-risk">--</div>
+          </div>
+        </div>
+
         <!-- Live Diagnostics & Reason Codes -->
         <div style="margin-top: 0.5rem;">
           <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Active Threat Drivers / Reason Codes:</div>
@@ -599,6 +614,12 @@
   </footer>
 
   <script>
+    const API_BASE = (new URLSearchParams(window.location.search).get('api') || window.location.origin).replace(/\/$/, '');
+    const API_PREFIX = `${API_BASE}/api/v1`;
+    const authHeaders = () => {
+      const token = window.localStorage.getItem('sih_access_token');
+      return token ? { Authorization: `Bearer ${token}` } : {};
+    };
     let currentSessionId = null;
     let ws = null;
     let isStreaming = false;
@@ -608,7 +629,7 @@
     // Initialize session on load
     async function initSession() {
       try {
-        const res = await fetch('/api/v1/sessions', {
+        const res = await fetch(`${API_PREFIX}/sessions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -623,6 +644,19 @@
         console.warn('Could not auto-create session, generating local UUID:', err);
         currentSessionId = '11111111-2222-3333-4444-555555555555';
         document.getElementById('session-display').innerText = 'Session: Local Mode';
+      }
+    }
+
+    async function loadAnalytics() {
+      try {
+        const res = await fetch(`${API_PREFIX}/analytics/overview`, { headers: authHeaders() });
+        if (!res.ok) return;
+        const data = await res.json();
+        document.getElementById('analytics-analyses').innerText = data.total_analyses;
+        document.getElementById('analytics-sessions').innerText = data.total_sessions;
+        document.getElementById('analytics-risk').innerText = Number(data.average_risk_score || 0).toFixed(1);
+      } catch (err) {
+        console.warn('Analytics unavailable:', err);
       }
     }
 
@@ -708,7 +742,7 @@
       };
 
       try {
-        const res = await fetch('/api/v1/analyze', {
+        const res = await fetch(`${API_PREFIX}/analyze`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -729,7 +763,8 @@
       if (!isStreaming) {
         // Start streaming
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        ws = new WebSocket(`${protocol}//${window.location.host}/api/v1/stream?session_id=${currentSessionId}`);
+        const streamBase = API_BASE.replace(/^http/, protocol === 'wss:' ? 'ws' : 'http');
+        ws = new WebSocket(`${streamBase}/api/v1/stream?session_id=${currentSessionId}`);
 
         ws.onopen = () => {
           isStreaming = true;

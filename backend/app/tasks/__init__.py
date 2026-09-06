@@ -1,0 +1,1 @@
+"""Background task entry points for non-blocking backend operations."""

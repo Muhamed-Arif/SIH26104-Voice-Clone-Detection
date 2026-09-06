@@ -131,5 +131,6 @@ class AudioOrchestrator:
             model_version=analysis_event.model_version,
             created_at=analysis_event.created_at,
             reason_codes=risk_assessment.reason_codes,
+            risk_factors=risk_assessment.risk_factors,
             alert=alert_response,
         )

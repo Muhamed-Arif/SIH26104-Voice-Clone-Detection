@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 from app.database.base import RiskLevel
+from app.risk_engine.models.risk_result import RiskFactor
 
 
 class MLPrediction(BaseModel):
@@ -37,6 +38,7 @@ class AnalysisResultResponse(BaseModel):
     model_version: Optional[str]
     created_at: datetime
     reason_codes: List[str] = Field(default_factory=list)
+    risk_factors: List[RiskFactor] = Field(default_factory=list)
     alert: Optional[AlertResponse] = None
 
     model_config = {"from_attributes": True}

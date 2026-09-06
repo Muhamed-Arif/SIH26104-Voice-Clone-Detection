@@ -5,7 +5,7 @@ from app.database.connection import get_db
 from app.schemas.session import SessionCreateRequest, SessionResponse
 from app.schemas.errors import ErrorResponse
 from app.services.session_manager import SessionManager
-from app.security.authentication import get_current_user_optional
+from app.security.authentication import get_current_user
 
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
 
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/sessions", tags=["Sessions"])
 async def create_session(
     payload: SessionCreateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user_optional),
+    current_user: dict = Depends(get_current_user),
 ) -> SessionResponse:
     """Initializes a new real-time or batch voice analysis session."""
     manager = SessionManager(db)
@@ -40,6 +40,7 @@ async def create_session(
 async def get_session(
     session_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ) -> SessionResponse:
     """Retrieves session metadata and current status."""
     manager = SessionManager(db)

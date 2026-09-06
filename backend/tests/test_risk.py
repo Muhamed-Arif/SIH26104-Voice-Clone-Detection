@@ -52,3 +52,21 @@ def test_degraded_quality_modifier():
         audio_quality="DEGRADED",
     )
     assert RC_DEGRADED_AUDIO_QUALITY in assessment.reason_codes
+
+
+def test_risk_result_contains_dynamic_confidence_and_factors():
+    assessment = RiskCalculator.calculate_risk(
+        synthetic_probability=0.94,
+        confidence=0.88,
+        audio_quality="DEGRADED",
+    )
+    assert 0.0 <= assessment.confidence <= 1.0
+    assert assessment.risk_factors
+    assert all(factor.contribution >= 0.0 for factor in assessment.risk_factors)
+
+
+def test_risk_calculation_clamps_out_of_range_model_values():
+    low = RiskCalculator.calculate_risk(synthetic_probability=-1, confidence=2)
+    high = RiskCalculator.calculate_risk(synthetic_probability=3, confidence=-1)
+    assert 0 <= low.risk_score <= 100
+    assert 0 <= high.risk_score <= 100

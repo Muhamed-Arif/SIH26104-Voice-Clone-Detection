@@ -55,8 +55,11 @@ async def get_current_user(
     # TODO(M5): Connect directly to identity directory / LDAP.
     """
     if not credentials:
-        # Fallback for dev convenience if no bearer provided
-        return {"user_id": uuid.UUID("00000000-0000-0000-0000-000000000001"), "role": "admin"}
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     user = await get_current_user_optional(credentials)
     if not user:
         raise HTTPException(
