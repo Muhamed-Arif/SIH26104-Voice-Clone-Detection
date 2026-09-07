@@ -1,6 +1,6 @@
 import httpx
-import random
-from typing import Any, Dict, Optional
+from typing import Optional
+
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.schemas.analysis import MLPrediction
@@ -10,7 +10,12 @@ logger = get_logger(__name__)
 
 
 class MLClient:
-    """Client for external ML inference service (Member 1) with local mock fallback."""
+    """HTTP client for the real M1 inference service.
+
+    Mock inference is available only when MOCK_ML_SERVICE=True. In normal integration
+    mode an unavailable ML service is treated as an error instead of silently
+    generating a fake prediction.
+    """
 
     def __init__(self, service_url: Optional[str] = None, timeout: Optional[float] = None):
         self.service_url = service_url or settings.ML_SERVICE_URL
@@ -18,72 +23,65 @@ class MLClient:
         self.force_mock = settings.MOCK_ML_SERVICE
 
     async def predict(self, chunk: DSPAudioChunk) -> MLPrediction:
-        """Invokes the remote ML service or falls back to local mock prediction."""
-        if not self.force_mock and self.service_url:
-            try:
-                async with httpx.AsyncClient(timeout=self.timeout) as client:
-                    response = await client.post(
-                        self.service_url,
-                        json={
-                            "chunk_id": chunk.chunk_id,
-                            "sample_rate": chunk.sample_rate,
-                            "quality": chunk.quality,
-                            "timestamp": chunk.timestamp,
-                            "waveform": chunk.waveform,
-                        },
-                    )
-                    if response.status_code == 200:
-                        data = response.json()
-                        return MLPrediction(
-                            synthetic_probability=float(data.get("synthetic_probability", 0.5)),
-                            confidence=float(data.get("confidence", 0.8)),
-                            model_version=str(data.get("model_version", "v0.3")),
-                        )
-                    else:
-                        logger.warning(
-                            f"ML service returned non-200 status {response.status_code}. Falling back to mock."
-                        )
-            except Exception as exc:
-                logger.warning(
-                    f"ML service unreachable at {self.service_url} ({exc}). Using mock fallback."
-                )
+        if self.force_mock:
+            return self._generate_mock_prediction(chunk)
 
-        return self._generate_mock_prediction(chunk)
+        if not self.service_url:
+            raise RuntimeError("ML_SERVICE_URL is not configured")
+
+        payload = {
+            "chunk_id": chunk.chunk_id,
+            "sample_rate": chunk.sample_rate,
+            "quality": chunk.quality,
+            "timestamp": chunk.timestamp,
+            "waveform": chunk.waveform,
+            "language": "English",
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(self.service_url, json=payload)
+        except httpx.HTTPError as exc:
+            logger.error("ML service request failed: %s", exc)
+            raise RuntimeError(f"ML service unreachable at {self.service_url}: {exc}") from exc
+
+        if response.status_code != 200:
+            body = response.text[:1000]
+            raise RuntimeError(
+                f"ML service returned HTTP {response.status_code}: {body}"
+            )
+
+        data = response.json()
+        try:
+            synthetic_probability = float(data["synthetic_probability"])
+            confidence = float(data["confidence"])
+            model_version = str(data["model_version"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise RuntimeError(f"Invalid ML response contract: {data}") from exc
+
+        if not 0.0 <= synthetic_probability <= 1.0:
+            raise RuntimeError("ML synthetic_probability must be within [0, 1]")
+        if not 0.0 <= confidence <= 1.0:
+            raise RuntimeError("ML confidence must be within [0, 1]")
+        if not model_version:
+            raise RuntimeError("ML model_version is empty")
+
+        return MLPrediction(
+            synthetic_probability=synthetic_probability,
+            confidence=confidence,
+            model_version=model_version,
+        )
 
     def _generate_mock_prediction(self, chunk: DSPAudioChunk) -> MLPrediction:
-        """Generates deterministic/heuristic mock predictions for testing."""
         chunk_id_lower = chunk.chunk_id.lower()
-        quality_lower = chunk.quality.lower()
-
-        # Heuristic determination based on chunk ID or quality hints for testing
-        if "spoof" in chunk_id_lower or "synthetic" in chunk_id_lower or "fake" in chunk_id_lower:
+        if any(key in chunk_id_lower for key in ("spoof", "synthetic", "fake")):
             return MLPrediction(
                 synthetic_probability=0.91,
                 confidence=0.87,
-                model_version="v0.3",
+                model_version="mock-v1",
             )
-        elif "clean" in chunk_id_lower or "genuine" in chunk_id_lower or "human" in chunk_id_lower:
-            return MLPrediction(
-                synthetic_probability=0.08,
-                confidence=0.92,
-                model_version="v0.3",
-            )
-        elif "ambiguous" in chunk_id_lower or "medium" in chunk_id_lower:
-            return MLPrediction(
-                synthetic_probability=0.52,
-                confidence=0.74,
-                model_version="v0.3",
-            )
-        elif "degraded" in quality_lower:
-            return MLPrediction(
-                synthetic_probability=0.65,
-                confidence=0.55,
-                model_version="v0.3",
-            )
-        else:
-            # Default contract benchmark prediction
-            return MLPrediction(
-                synthetic_probability=0.91,
-                confidence=0.87,
-                model_version="v0.3",
-            )
+        return MLPrediction(
+            synthetic_probability=0.08,
+            confidence=0.92,
+            model_version="mock-v1",
+        )
