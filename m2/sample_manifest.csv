@@ -1,0 +1,4 @@
+path,label,language
+../your_audio/human.wav,REAL,English
+../your_audio/alloy_0.wav,AI_GENERATED,English
+../your_audio/tamil_human.wav,REAL,Tamil

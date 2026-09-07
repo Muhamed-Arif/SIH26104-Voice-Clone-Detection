@@ -1,0 +1,2 @@
+# Bundled estimators were serialized with this scikit-learn version.
+scikit-learn==1.9.0
