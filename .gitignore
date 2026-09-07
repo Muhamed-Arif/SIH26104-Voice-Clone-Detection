@@ -1,6 +1,11 @@
-.venv/
+# Datasets
+ASVspoof2019_LA/
+LA.zip
+keys/
+
+# Python cache
 __pycache__/
 *.pyc
-.env
-*.db
-.pytest_cache/
+
+# Hugging Face cache
+.cache/

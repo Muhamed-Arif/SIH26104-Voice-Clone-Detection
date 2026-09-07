@@ -1,0 +1,24 @@
+ASVspoof 2021 DF Part00 OOD Evaluation
+================================
+FLAC files found: 152955
+Processed successfully: 152955
+Missing labels: 0
+Decode/feature errors: 0
+Feature matrix: (152955, 30)
+Accuracy: 0.9577588179529927
+Balanced Accuracy: 0.619796102722932
+ROC-AUC: 0.7556217810538798
+
+Confusion Matrix:
+[[  1414   4121]
+ [  2340 145080]]
+
+Classification Report:
+              precision    recall  f1-score   support
+
+        REAL       0.38      0.26      0.30      5535
+AI_GENERATED       0.97      0.98      0.98    147420
+
+    accuracy                           0.96    152955
+   macro avg       0.67      0.62      0.64    152955
+weighted avg       0.95      0.96      0.95    152955
