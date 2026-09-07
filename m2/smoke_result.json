@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "input": "Generated 5-second, 48 kHz PCM sine wave; transport fixture only",
+  "chunks": 4,
+  "model": "baseline-logistic-v2",
+  "feature_version": "summary-v2",
+  "summary": {
+    "type": "summary",
+    "session_id": "f8c76d1e-0845-4436-b4f4-2b2e5dd03d28",
+    "counts": {
+      "REAL": 4
+    },
+    "latency_sample_count": 4,
+    "latency_scope": "latest 10000 successful API responses",
+    "request_latency_p50_ms": 65.50999999999999,
+    "request_latency_p95_ms": 1264.1944999999996,
+    "note": "Latency excludes audio collection; REAL is a model output, not identity verification."
+  },
+  "classification_accuracy_test": false
+}
