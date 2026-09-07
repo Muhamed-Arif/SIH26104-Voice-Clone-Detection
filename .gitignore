@@ -9,3 +9,11 @@ __pycache__/
 
 # Hugging Face cache
 .cache/
+
+# ASVspoof 2021 dataset
+ASVspoof2021_DF_eval/
+ASVspoof2021_DF_eval_part00.tar.gz
+
+# M1 datasets / external test data
+M1_dataset/
+m1_external_test/
