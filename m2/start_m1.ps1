@@ -1,34 +1,31 @@
 param(
-    [ValidateSet("candidate", "baseline")][string]$Model = "candidate",
     [string]$ModelPath = "",
-    [int]$Port = 8001,
-    [switch]$EnableShadow
+    [double]$Threshold = 0.45,
+    [int]$Port = 8001
 )
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path $PSScriptRoot -Parent
+$Python = Join-Path $RepoRoot ".venv-m2/Scripts/python.exe"
+
+if (-not (Test-Path $Python)) {
+    throw "Python environment not found. Run: powershell -ExecutionPolicy Bypass -File .\m2\setup_windows.ps1"
+}
 
 if (-not $ModelPath) {
-    if ($Model -eq "candidate") {
-        $ModelPath = Join-Path $RepoRoot "ml-service/model_artifacts/candidate-gradient-boosting-v1.joblib"
-    } else {
-        $ModelPath = Join-Path $RepoRoot "ml-service/model_artifacts/baseline-v2.joblib"
-    }
+    $ModelPath = Join-Path $RepoRoot "models/voice_authenticity_balanced.joblib"
 }
 
-$resolved = (Resolve-Path $ModelPath).Path
-$env:MODEL_ARTIFACT_PATH = $resolved
-$env:ALLOW_MOCK_PREDICTOR = "0"
-if ($EnableShadow) {
-    $env:ENABLE_SHADOW_PREDICTOR = "1"
-} else {
-    $env:ENABLE_SHADOW_PREDICTOR = "0"
-}
+$env:MODEL_PATH = (Resolve-Path $ModelPath).Path
+$env:MODEL_THRESHOLD = [string]$Threshold
 
-Write-Host "Starting M1 model: $resolved"
-Write-Host "Shadow predictor: $env:ENABLE_SHADOW_PREDICTOR"
+Write-Host "Starting M1 ML service"
+Write-Host "Model: $env:MODEL_PATH"
+Write-Host "Threshold: $env:MODEL_THRESHOLD"
+Write-Host "URL: http://127.0.0.1:$Port"
+
 Push-Location (Join-Path $RepoRoot "ml-service")
 try {
-    & (Join-Path $RepoRoot ".venv-m2/Scripts/python.exe") -m uvicorn ml_service.api:app --host 127.0.0.1 --port $Port
+    & $Python -m uvicorn app:app --host 127.0.0.1 --port $Port
 } finally {
     Pop-Location
 }

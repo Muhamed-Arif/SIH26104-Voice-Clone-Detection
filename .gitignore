@@ -2,18 +2,31 @@
 ASVspoof2019_LA/
 LA.zip
 keys/
-
-# Python cache
-__pycache__/
-*.pyc
-
-# Hugging Face cache
-.cache/
-
-# ASVspoof 2021 dataset
 ASVspoof2021_DF_eval/
 ASVspoof2021_DF_eval_part00.tar.gz
-
-# M1 datasets / external test data
 M1_dataset/
 m1_external_test/
+
+# Python / virtual environments
+__pycache__/
+*.pyc
+.venv/
+.venv-m2/
+venv/
+
+# Runtime data
+*.db
+*.sqlite
+*.sqlite3
+m2/logs/
+data/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Tool caches
+.cache/
+.pytest_cache/
+.coverage
