@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./voice_cloning.db"
+    DATABASE_URL: str = "mysql+aiomysql://root:YOUR_MYSQL_PASSWORD@localhost:3306/voice_shield"
 
     # Security
     SECRET_KEY: str = "dev-secret-key-change-in-production-min-32-chars-long!"

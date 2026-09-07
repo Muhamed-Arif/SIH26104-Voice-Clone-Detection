@@ -52,7 +52,7 @@ Copy `.env.example` to `.env`:
 cp backend/.env.example backend/.env
 ```
 
-### 3. Database Migrations (PostgreSQL)
+### 3. Database Migrations (MySQL)
 Run Alembic migrations:
 ```bash
 cd backend
